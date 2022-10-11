@@ -1,5 +1,6 @@
 from cProfile import label
 from distutils.log import info
+import PIL
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 import numpy as np
@@ -10,16 +11,42 @@ from tensorflow import keras
 from keras import layers
 from keras.models import Sequential
 
-import pathlib
-# dataset_url = "https://storage.googleapis.com/download.tensorflow.org/example_images/flower_photos.tgz"
-# data_dir = tf.keras.utils.get_file('flower_photos', origin=dataset_url, untar=True)
-# data_dir = pathlib.Path(data_dir)
+ds = tf.keras.datasets.mnist
 
-ds = tfds.load('emnist/letters', split='train', shuffle_files=True)
+train_ds, val_ds = ds.load_data()
 
-# roses = list(data_dir.glob('roses/*'))
-# img = mpimg.imread(str(roses[0]))
-# imgplot = plt.imshow(img)
-# plt.show()
+model = tf.keras.Sequential([
+    layers.Rescaling(1./255, input_shape=(28, 28, 3)),
+    layers.Conv2D(16, 3, padding='same', activation='relu'),
+    layers.MaxPooling2D(),
+    layers.Conv2D(32, 3, padding='same', activation='relu'),
+    layers.MaxPooling2D(),
+    layers.Conv2D(64, 3, padding='same', activation='relu'),
+    layers.MaxPooling2D(),
+    layers.Flatten(),
+    layers.Dense(128, activation='relu'),
+    layers.Dense(10)
+])
+
+model.compile(optimizer='adam',
+              loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+              metrics=['accuracy'])
+
+model.fit(
+  train_ds,
+  epochs=10
+)
+
+probability_model = tf.keras.Sequential([model, 
+                                         tf.keras.layers.Softmax()])
+                                         
+img = tf.keras.utils.load_img("3.png")
+image_array = tf.keras.utils.img_to_array(img)
+image_array = (tf.expand_dims(image_array, 0))
+
+predictions_single = probability_model.predict(image_array)
+
+print(predictions_single)
+
 
 
